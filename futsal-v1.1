@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>저스트원 세로형 풋살 전술판</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background: #111827;
+            display: flex;
+            justify-content: center;
+            padding: 16px;
+            color: #f9fafb;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 32px;
+            margin-bottom: 4px;
+        }
+        .subtitle {
+            font-size: 13px;
+            color: #9ca3af;
+            margin-bottom: 10px;
+        }
+        .button-row {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            color: #f9fafb;
+            transition: transform 0.1s ease, opacity 0.1s ease, background-color 0.2s;
+            white-space: nowrap;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        button:active {
+            transform: scale(0.96);
+        }
+        .btn-default { background: #4b5563; }
+        .btn-default:hover { background: #6b7280; }
+        .btn-mode { background: #2563eb; }
+        .btn-mode.active { background: #1d4ed8; box-shadow: 0 0 0 3px #93c5fd; }
+        .btn-mode:hover:not(.active) { background: #3b82f6; }
+        .btn-reset { background: #dc2626; }
+        .btn-reset:hover { background: #ef4444; }
+        .btn-delete { background: #dc2626; }
+        .btn-delete.active { background: #991b1b; box-shadow: 0 0 0 3px #fca5a5; }
+        .btn-delete:hover:not(.active) { background: #ef4444; }
+        .btn-play { background: #16a34a; }
+        .btn-play:hover { background: #22c55e; }
+        .btn-export { background: #7c3aed; }
+        .btn-export:hover { background: #9333ea; }
+        .btn-import { background: #fbbf24; color: #1f2937; }
+        .btn-import:hover { background: #facc15; }
+
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 160%; 
+            max-width: 500px;
+            margin: 0 auto;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            border: 2px solid #1f2937;
+            touch-action: none;
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: #166534;
+        }
+
+        #message-box {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .message-content {
+            background: #1f2937;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            max-width: 90%;
+            min-width: 300px;
+            text-align: left;
+        }
+        .message-content p {
+            margin-bottom: 16px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .message-content input, .message-content select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 16px;
+            border: 1px solid #4b5563;
+            border-radius: 4px;
+            background: #374151;
+            color: #f9fafb;
+            font-size: 14px;
+        }
+        .message-content label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #d1d5db;
+        }
+        .message-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .message-buttons button {
+            padding: 8px 16px;
+            box-shadow: none;
+        }
+
+        #file-input { display: none; }
+
+        @media (max-width: 600px) {
+            body { padding: 8px; }
+            h1 { font-size: 24px; }
+            .button-row { gap: 4px; }
+            button { padding: 6px 10px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>저스트원 세로형 풋살 전술판</h1>
+        <div class="subtitle">
+            세로 풋살 규격 적용. 선수 더블탭/클릭으로 이름 변경.
+        </div>
+
+        <div class="button-row">
+            <button class="btn-default" id="btnUndo">↩ 실행취소</button>
+            <button class="btn-default" id="btnRedo">↪ 재실행</button>
+            <button class="btn-mode active" id="btnMove">✋ 이동</button>
+            <button class="btn-mode" id="btnArrow">➡ 화살표</button>
+        </div>
+
+        <div class="button-row">
+            <button class="btn-mode" id="btnAddPlayer">➕ 선수 추가</button> 
+            <button class="btn-delete" id="btnDelete">🗑️ 선수 삭제</button>
+            <button class="btn-default" id="btnKeyframeReset">❌ 움직임 초기화</button>
+            <button class="btn-reset" id="btnReset">🔄 전체초기화</button>
+        </div>
+        
+        <div class="button-row">
+            <button class="btn-play" id="btnPlay">▶ 재생</button>
+            <button class="btn-export" id="btnExport">📁 전술 저장</button>
+            <input type="file" id="file-input" accept=".json" />
+            <button class="btn-import" id="btnImport">📥 불러오기</button>
+        </div>
+
+        <div class="canvas-wrapper">
+            <canvas id="canvas" width="500" height="800"></canvas>
+        </div>
+    </div>
+
+    <div id="message-box">
+        <div class="message-content">
+            <p id="message-text"></p>
+            <div id="add-player-form" style="display: none;">
+                <label>선수 이름/포지션 (최대 5자)</label>
+                <input type="text" id="player-name" maxlength="5" placeholder="예: GK, 피보, 아라" />
+                <label>팀 선택</label>
+                <select id="player-team">
+                    <option value="blue">파란팀 (아래쪽)</option>
+                    <option value="red">빨간팀 (위쪽)</option>
+                </select>
+            </div>
+            <input type="text" id="prompt-input" style="display: none;" />
+            <div class="message-buttons">
+                <button class="btn-default" id="msg-cancel" style="display: none;">취소</button>
+                <button class="btn-mode" id="msg-ok">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ORIGINAL_WIDTH = 500;
+        const ORIGINAL_HEIGHT = 800;
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const wrapper = document.querySelector('.canvas-wrapper');
+
+        let scaleFactorX = 1;
+        let scaleFactorY = 1;
+
+        const PITCH_X_START = 50;
+        const PITCH_X_END = 450;
+        const PITCH_Y_START = 50;
+        const PITCH_Y_END = 750;
+        const PITCH_WIDTH = PITCH_X_END - PITCH_X_START;
+        const PITCH_HEIGHT = PITCH_Y_END - PITCH_Y_START;
+
+        const PENALTY_AREA_DISTANCE = 120;
+        const SECOND_PENALTY_MARK_DISTANCE = 200;
+        const GOAL_WIDTH_HALF = 30;
+        const GOAL_X_CENTER = ORIGINAL_WIDTH / 2;
+
+        const msgBox = document.getElementById('message-box');
+        const msgText = document.getElementById('message-text');
+        const promptInput = document.getElementById('prompt-input');
+        const addPlayerForm = document.getElementById('add-player-form');
+        const playerNameInput = document.getElementById('player-name');
+        const playerTeamSelect = document.getElementById('player-team');
+        const msgOk = document.getElementById('msg-ok');
+        const msgCancel = document.getElementById('msg-cancel');
+
+        function showMessage(message) {
+            msgText.textContent = message;
+            promptInput.style.display = 'none';
+            addPlayerForm.style.display = 'none';
+            msgCancel.style.display = 'none';
+            msgOk.textContent = '확인';
+            return new Promise(resolve => {
+                msgOk.onclick = () => {
+                    msgBox.style.display = 'none';
+                    resolve();
+                };
+                msgBox.style.display = 'flex';
+            });
+        }
+
+        function showPrompt(message, defaultValue) {
+            msgText.textContent = message;
+            promptInput.value = defaultValue || '';
+            promptInput.style.display = 'block';
+            addPlayerForm.style.display = 'none';
+            msgCancel.style.display = 'inline-block';
+            msgOk.textContent = '확인';
+
+            return new Promise(resolve => {
+                const close = (value) => {
+                    msgBox.style.display = 'none';
+                    resolve(value);
+                };
+                msgOk.onclick = () => close(promptInput.value);
+                msgCancel.onclick = () => close(null);
+                msgBox.style.display = 'flex';
+            });
+        }
+
+        function showAddPlayerDialog() {
+            msgText.textContent = '새로운 선수 추가';
+            promptInput.style.display = 'none';
+            addPlayerForm.style.display = 'block';
+            playerNameInput.value = '';
+            playerTeamSelect.value = 'blue';
+            msgCancel.style.display = 'inline-block';
+            msgOk.textContent = '추가';
+
+            return new Promise(resolve => {
+                const close = (data) => {
+                    msgBox.style.display = 'none';
+                    resolve(data);
+                };
+                msgOk.onclick = () => {
+                    const name = playerNameInput.value.trim();
+                    const team = playerTeamSelect.value;
+                    if (name) {
+                        close({ name: name.substring(0, 5).toUpperCase(), team });
+                    } else {
+                        showMessage('이름을 입력해주세요!').then(() => {
+                            showAddPlayerDialog().then(resolve);
+                        });
+                    }
+                };
+                msgCancel.onclick = () => close(null);
+                msgBox.style.display = 'flex';
+            });
+        }
+
+        function handleResize() {
+            const displayWidth = wrapper.clientWidth;
+            const displayHeight = wrapper.clientHeight;
+
+            scaleFactorX = displayWidth / ORIGINAL_WIDTH;
+            scaleFactorY = displayHeight / ORIGINAL_HEIGHT;
+
+            render();
+        }
+
+        function getCanvasPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX || e.touches?.[0]?.clientX;
+            const clientY = e.clientY || e.touches?.[0]?.clientY;
+
+            const x = (clientX - rect.left) / scaleFactorX;
+            const y = (clientY - rect.top) / scaleFactorY;
+            return { x, y };
+        }
+
+        function createDefaultPlayers() {
+            return [
+                { id: 1, x: 250, y: 70, team: 'blue', label: 'GK' },
+                { id: 4, x: 250, y: 150, team: 'blue', label: 'Fixo' },
+                { id: 2, x: 150, y: 250, team: 'blue', label: 'Ala' },
+                { id: 3, x: 350, y: 250, team: 'blue', label: 'Ala' },
+                { id: 5, x: 250, y: 350, team: 'blue', label: 'Pivo' },
+                { id: 6, x: 250, y: 730, team: 'red', label: 'GK' },
+                { id: 9, x: 250, y: 650, team: 'red', label: 'Fixo' },
+                { id: 7, x: 150, y: 550, team: 'red', label: 'Ala' },
+                { id: 8, x: 350, y: 550, team: 'red', label: 'Ala' },
+                { id: 10, x: 250, y: 450, team: 'red', label: 'Pivo' }
+            ];
+        }
+
+        let players = createDefaultPlayers();
+        let ball = { x: ORIGINAL_WIDTH / 2, y: ORIGINAL_HEIGHT / 2 };
+
+        const PLAYER_RADIUS = 26;
+        const BALL_RADIUS = 12;
+
+        let arrows = [];
+        let mode = 'move'; // 'move' | 'arrow' | 'delete'
+        let dragging = null;
+        let drawingArrow = null;
+
+        let keyframes = [];
+        let currentIndex = -1;
+
+        let isPlaying = false;
+        let animationProgress = 0;
+        let lastTimestamp = null;
+        let animationFrameId = null;
+
+        let lastTapTime = 0;
+        const DBL_TAP_THRESHOLD = 300;
+
+        const btnUndo = document.getElementById('btnUndo');
+        const btnRedo = document.getElementById('btnRedo');
+        const btnMove = document.getElementById('btnMove');
+        const btnArrow = document.getElementById('btnArrow');
+        const btnDelete = document.getElementById('btnDelete');
+        const btnReset = document.getElementById('btnReset');
+        const btnKeyframeReset = document.getElementById('btnKeyframeReset');
+        const btnAddPlayer = document.getElementById('btnAddPlayer');
+        const btnPlay = document.getElementById('btnPlay');
+        const btnExport = document.getElementById('btnExport');
+        const btnImport = document.getElementById('btnImport');
+        const fileInput = document.getElementById('file-input');
+
+        function drawField() {
+            ctx.setTransform(scaleFactorX, 0, 0, scaleFactorY, 0, 0);
+
+            ctx.fillStyle = '#166534';
+            ctx.fillRect(0, 0, ORIGINAL_WIDTH, ORIGINAL_HEIGHT);
+
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3 / Math.max(scaleFactorX, scaleFactorY);
+            ctx.lineCap = 'round';
+
+            ctx.strokeRect(PITCH_X_START, PITCH_Y_START, PITCH_WIDTH, PITCH_HEIGHT);
+
+            ctx.beginPath();
+            ctx.moveTo(PITCH_X_START, ORIGINAL_HEIGHT / 2);
+            ctx.lineTo(PITCH_X_END, ORIGINAL_HEIGHT / 2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(GOAL_X_CENTER, ORIGINAL_HEIGHT / 2, 60, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            const Y1 = PITCH_Y_START;
+            const PK1_Y = Y1 + PENALTY_AREA_DISTANCE;
+            const SEC_PK1_Y = Y1 + SECOND_PENALTY_MARK_DISTANCE;
+
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = '#f9fafb';
+            ctx.beginPath();
+            ctx.moveTo(GOAL_X_CENTER - GOAL_WIDTH_HALF, Y1);
+            ctx.lineTo(GOAL_X_CENTER - GOAL_WIDTH_HALF, Y1 - 5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(GOAL_X_CENTER + GOAL_WIDTH_HALF, Y1);
+            ctx.lineTo(GOAL_X_CENTER + GOAL_WIDTH_HALF, Y1 - 5);
+            ctx.stroke();
+            ctx.lineWidth = 3 / Math.max(scaleFactorX, scaleFactorY);
+
+            ctx.beginPath();
+            ctx.arc(GOAL_X_CENTER, Y1, PENALTY_AREA_DISTANCE, 0, Math.PI, false); 
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(GOAL_X_CENTER, PK1_Y, 4, 0, Math.PI * 2); 
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(GOAL_X_CENTER, SEC_PK1_Y, 4, 0, Math.PI * 2); 
+            ctx.fill();
+
+            const Y2 = PITCH_Y_END;
+            const PK2_Y = Y2 - PENALTY_AREA_DISTANCE;
+            const SEC_PK2_Y = Y2 - SECOND_PENALTY_MARK_DISTANCE;
+            
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = '#f9fafb';
+            ctx.beginPath();
+            ctx.moveTo(GOAL_X_CENTER - GOAL_WIDTH_HALF, Y2);
+            ctx.lineTo(GOAL_X_CENTER - GOAL_WIDTH_HALF, Y2 + 5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(GOAL_X_CENTER + GOAL_WIDTH_HALF, Y2);
+            ctx.lineTo(GOAL_X_CENTER + GOAL_WIDTH_HALF, Y2 + 5);
+            ctx.stroke();
+            ctx.lineWidth = 3 / Math.max(scaleFactorX, scaleFactorY);
+            
+            ctx.beginPath();
+            ctx.arc(GOAL_X_CENTER, Y2, PENALTY_AREA_DISTANCE, Math.PI, Math.PI * 2, false); 
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(GOAL_X_CENTER, PK2_Y, 4, 0, Math.PI * 2); 
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(GOAL_X_CENTER, SEC_PK2_Y, 4, 0, Math.PI * 2); 
+            ctx.fill();
+
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
+
+        function drawPlayer(p) {
+            const color = p.team === 'blue' ? '#1e40af' : '#b91c1c';
+
+            const x = p.x * scaleFactorX;
+            const y = p.y * scaleFactorY;
+            const radius = PLAYER_RADIUS * Math.min(scaleFactorX, scaleFactorY);
+
+            ctx.fillStyle = 'rgba(0,0,0,0.25)';
+            ctx.beginPath();
+            ctx.arc(x + 2, y + 2, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#f9fafb';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = '#f9fafb';
+            ctx.font = `bold ${11 * Math.min(scaleFactorX, scaleFactorY)}px 'Inter'`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(p.label, x, y);
+        }
+
+        function drawBall() {
+            const x = ball.x * scaleFactorX;
+            const y = ball.y * scaleFactorY;
+            const radius = BALL_RADIUS * Math.min(scaleFactorX, scaleFactorY);
+
+            ctx.fillStyle = 'rgba(0,0,0,0.35)';
+            ctx.beginPath();
+            ctx.arc(x + 2, y + 2, radius + 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#facc15';
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#78350f';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x - radius / 1.2, y);
+            ctx.lineTo(x + radius / 1.2, y);
+            ctx.stroke();
+        }
+
+        function drawArrow(a) {
+            const x1 = a.x1 * scaleFactorX;
+            const y1 = a.y1 * scaleFactorY;
+            const x2 = a.x2 * scaleFactorX;
+            const y2 = a.y2 * scaleFactorY;
+
+            ctx.strokeStyle = a.color || '#fbbf24';
+            ctx.lineWidth = 4;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const head = 14;
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(
+                x2 - head * Math.cos(angle - 0.5),
+                y2 - head * Math.sin(angle - 0.5)
+            );
+            ctx.lineTo(
+                x2 - head * Math.cos(angle + 0.5),
+                y2 - head * Math.sin(angle + 0.5)
+            );
+            ctx.stroke();
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawField();
+            arrows.forEach(a => drawArrow(a));
+            players.forEach(p => drawPlayer(p));
+            drawBall();
+            updateButtonStates();
+        }
+
+        function updateButtonStates() {
+            btnUndo.disabled = currentIndex <= 0;
+            btnRedo.disabled = currentIndex >= keyframes.length - 1;
+
+            btnMove.classList.toggle('active', mode === 'move');
+            btnArrow.classList.toggle('active', mode === 'arrow');
+            btnDelete.classList.toggle('active', mode === 'delete');
+        }
+
+        function snapshotState() {
+            return {
+                players: players.map(p => ({ ...p })),
+                ball: { ...ball },
+                arrows: arrows.map(a => ({ ...a }))
+            };
+        }
+
+        function pushState() {
+            const snap = snapshotState();
+            if (currentIndex < keyframes.length - 1) {
+                keyframes = keyframes.slice(0, currentIndex + 1);
+            }
+            keyframes.push(snap);
+            currentIndex = keyframes.length - 1;
+            updateButtonStates();
+        }
+
+        function applyState(index) {
+            const snap = keyframes[index];
+            if (!snap) return;
+            players = snap.players.map(p => ({ ...p }));
+            ball = { ...snap.ball };
+            arrows = snap.arrows.map(a => ({ ...a }));
+            render();
+            updateButtonStates();
+        }
+
+        function cancelAnimationIfNeeded() {
+            if (isPlaying) {
+                isPlaying = false;
+                if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+                animationProgress = 0;
+                lastTimestamp = null;
+                btnPlay.textContent = '▶ 재생';
+            }
+        }
+
+        function isPointNearArrow(x, y, a) {
+            const { x1, y1, x2, y2 } = a;
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const len2 = dx * dx + dy * dy;
+            if (len2 === 0) return Math.hypot(x - x1, y - y1) < 10;
+            let t = ((x - x1) * dx + (y - y1) * dy) / len2;
+            t = Math.max(0, Math.min(1, t));
+            const px = x1 + t * dx;
+            const py = y1 + t * dy;
+            const dist = Math.hypot(x - px, y - py);
+            return dist < 10;
+        }
+        
+        function getNextPlayerId() {
+            return players.reduce((maxId, p) => Math.max(maxId, p.id), 0) + 1;
+        }
+
+        async function addPlayer() {
+            cancelAnimationIfNeeded();
+            const result = await showAddPlayerDialog();
+            if (!result) return;
+
+            const newId = getNextPlayerId();
+            const newPlayer = { 
+                id: newId, 
+                x: ORIGINAL_WIDTH / 2, 
+                y: ORIGINAL_HEIGHT / 2,
+                team: result.team,
+                label: result.name
+            };
+            players.push(newPlayer);
+            pushState();
+            render();
+            showMessage(`${result.team === 'blue' ? '파란팀' : '빨간팀'}에 ${result.name} 선수가 추가되었습니다!`);
+        }
+
+        async function changePlayerLabel(player) {
+            cancelAnimationIfNeeded();
+            const newLabel = await showPrompt(`선수 ${player.label}의 새로운 이름 (최대 5자):`, player.label);
+            
+            if (newLabel !== null && newLabel.trim() !== '') {
+                const trimmedLabel = newLabel.trim().substring(0, 5); 
+                player.label = trimmedLabel.toUpperCase();
+                pushState();
+                render();
+            }
+        }
+
+        function deletePlayer(playerId) {
+            const index = players.findIndex(p => p.id === playerId);
+            if (index !== -1) {
+                const deletedPlayer = players[index];
+                players.splice(index, 1);
+                pushState();
+                render();
+                showMessage(`${deletedPlayer.label} 선수가 삭제되었습니다.`);
+            }
+        }
+
+        canvas.addEventListener('pointerdown', e => {
+            cancelAnimationIfNeeded();
+            const { x, y } = getCanvasPos(e);
+
+            // 삭제 모드
+            if (mode === 'delete') {
+                for (const p of players) {
+                    const dx = x - p.x;
+                    const dy = y - p.y;
+                    if (dx * dx + dy * dy <= PLAYER_RADIUS * PLAYER_RADIUS) {
+                        deletePlayer(p.id);
+                        return;
+                    }
+                }
+                showMessage('선수를 클릭하여 삭제하세요.');
+                return;
+            }
+
+            // 화살표 모드
+            if (mode === 'arrow') {
+                const hit = arrows.findIndex(a => isPointNearArrow(x, y, a));
+                if (hit !== -1) {
+                    arrows.splice(hit, 1);
+                    pushState();
+                    render();
+                    return;
+                }
+                drawingArrow = { x1: x, y1: y, x2: x, y2: y, color: '#fbbf24' };
+                arrows.push(drawingArrow);
+                canvas.setPointerCapture(e.pointerId);
+                return;
+            }
+
+            // 이동 모드
+            const dxBall = x - ball.x;
+            const dyBall = y - ball.y;
+            if (dxBall * dxBall + dyBall * dyBall <= (BALL_RADIUS + 4) * (BALL_RADIUS + 4)) {
+                dragging = { type: 'ball', dx: dxBall, dy: dyBall };
+                canvas.setPointerCapture(e.pointerId);
+                return;
+            }
+
+            for (const p of players) {
+                const dx = x - p.x;
+                const dy = y - p.y;
+                if (dx * dx + dy * dy <= PLAYER_RADIUS * PLAYER_RADIUS) {
+                    dragging = { type: 'player', id: p.id, dx, dy };
+                    canvas.setPointerCapture(e.pointerId);
+                    return;
+                }
+            }
+        });
+
+        canvas.addEventListener('pointermove', e => {
+            const { x, y } = getCanvasPos(e);
+
+            if (drawingArrow && mode === 'arrow') {
+                drawingArrow.x2 = x;
+                drawingArrow.y2 = y;
+                render();
+                return;
+            }
+
+            if (!dragging || mode !== 'move') return;
+
+            const clampedX = Math.max(0, Math.min(ORIGINAL_WIDTH, x));
+            const clampedY = Math.max(0, Math.min(ORIGINAL_HEIGHT, y));
+
+            if (dragging.type === 'ball') {
+                ball.x = clampedX;
+                ball.y = clampedY;
+            } else if (dragging.type === 'player') {
+                const pl = players.find(p => p.id === dragging.id);
+                if (pl) {
+                    pl.x = clampedX;
+                    pl.y = clampedY;
+                }
+            }
+            render();
+        });
+
+        canvas.addEventListener('pointerup', e => {
+            if (drawingArrow && mode === 'arrow') {
+                const a = drawingArrow;
+                const dist = Math.hypot(a.x2 - a.x1, a.y2 - a.y1);
+                if (dist < 20) {
+                    arrows.pop();
+                }
+                drawingArrow = null;
+                canvas.releasePointerCapture(e.pointerId);
+                pushState();
+                render();
+                return;
+            }
+
+            if (dragging) {
+                dragging = null;
+                canvas.releasePointerCapture(e.pointerId);
+                pushState();
+                render();
+                return;
+            }
+            
+            const { x, y } = getCanvasPos(e);
+            const now = performance.now();
+            const timeDiff = now - lastTapTime;
+            lastTapTime = now;
+
+            if (timeDiff < DBL_TAP_THRESHOLD && mode === 'move') {
+                const player = players.find(p => {
+                    const dx = x - p.x;
+                    const dy = y - p.y;
+                    return dx * dx + dy * dy <= PLAYER_RADIUS * PLAYER_RADIUS;
+                });
+
+                if (player) {
+                    changePlayerLabel(player);
+                }
+            }
+        });
+
+        btnMove.addEventListener('click', () => {
+            mode = 'move';
+            updateButtonStates();
+        });
+
+        btnArrow.addEventListener('click', () => {
+            mode = 'arrow';
+            updateButtonStates();
+        });
+
+        btnDelete.addEventListener('click', () => {
+            mode = 'delete';
+            updateButtonStates();
+            showMessage('삭제할 선수를 클릭하세요.');
+        });
+
+        btnUndo.addEventListener('click', () => {
+            cancelAnimationIfNeeded();
+            if (currentIndex > 0) {
+                currentIndex -= 1;
+                applyState(currentIndex);
+            }
+        });
+
+        btnRedo.addEventListener('click', () => {
+            cancelAnimationIfNeeded();
+            if (currentIndex < keyframes.length - 1) {
+                currentIndex += 1;
+                applyState(currentIndex);
+            }
+        });
+
+        btnKeyframeReset.addEventListener('click', () => {
+            cancelAnimationIfNeeded();
+            keyframes = [];
+            currentIndex = -1; 
+            pushState(); 
+            showMessage('모든 움직임 기록이 초기화되었습니다.');
+        });
+        
+        btnAddPlayer.addEventListener('click', addPlayer);
+
+        btnReset.addEventListener('click', () => {
+            cancelAnimationIfNeeded();
+            players = createDefaultPlayers();
+            ball = { x: ORIGINAL_WIDTH / 2, y: ORIGINAL_HEIGHT / 2 };
+            arrows = [];
+            keyframes = [];
+            pushState();
+            render();
+            showMessage('전체 초기화되었습니다.');
+        });
+
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        function animationStep(timestamp) {
+            if (!isPlaying) return;
+
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            const delta = timestamp - lastTimestamp;
+            lastTimestamp = timestamp;
+
+            const frames = keyframes.slice(0, currentIndex + 1);
+            const maxIndex = frames.length - 1;
+            if (maxIndex <= 0) {
+                isPlaying = false;
+                btnPlay.textContent = '▶ 재생';
+                animationProgress = 0;
+                applyState(currentIndex);
+                return;
+            }
+
+            const speed = 800;
+            const totalDuration = maxIndex * speed;
+            animationProgress += delta / totalDuration;
+
+            if (animationProgress >= 1) {
+                animationProgress = 1;
+                isPlaying = false;
+                btnPlay.textContent = '▶ 재생';
+                applyState(currentIndex);
+                return;
+            }
+
+            const tGlobal = animationProgress * maxIndex;
+            const segIndex = Math.floor(tGlobal);
+            const segT = tGlobal - segIndex;
+
+            const f1 = frames[segIndex];
+            const f2 = frames[segIndex + 1];
+            
+            players = f1.players.map((p, i) => ({
+                ...p,
+                x: lerp(p.x, f2.players[i].x, segT),
+                y: lerp(p.y, f2.players[i].y, segT)
+            }));
+            ball = {
+                x: lerp(f1.ball.x, f2.ball.x, segT),
+                y: lerp(f1.ball.y, f2.ball.y, segT)
+            };
+            arrows = f1.arrows.map(a => ({ ...a }));
+
+            render();
+            animationFrameId = requestAnimationFrame(animationStep);
+        }
+
+        btnPlay.addEventListener('click', () => {
+            if (keyframes.length < 2) {
+                showMessage('재생하려면 최소 2개 이상의 키프레임이 필요합니다.');
+                return;
+            }
+
+            if (!isPlaying) {
+                if (animationProgress >= 1) {
+                    animationProgress = 0;
+                    applyState(0);
+                }
+                isPlaying = true;
+                lastTimestamp = null;
+                btnPlay.textContent = '⏸ 일시정지';
+                animationFrameId = requestAnimationFrame(animationStep);
+            } else {
+                isPlaying = false;
+                btnPlay.textContent = '▶ 재생';
+            }
+        });
+
+        btnExport.addEventListener('click', async () => {
+            if (keyframes.length === 0) {
+                showMessage('저장할 데이터가 없습니다.');
+                return;
+            }
+            
+            const name = await showPrompt('파일 이름:', 'justone_tactics');
+            if (name === null) return;
+
+            const data = {
+                meta: {
+                    type: 'justone_tactics',
+                    version: 3,
+                    createdAt: new Date().toISOString()
+                },
+                keyframes
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], {
+                type: 'application/json'
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = name + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showMessage('저장되었습니다.');
+        });
+        
+        btnImport.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.type !== 'application/json') {
+                showMessage('JSON 파일만 가능합니다.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.meta && data.meta.type === 'justone_tactics' && Array.isArray(data.keyframes)) {
+                        
+                        cancelAnimationIfNeeded(); 
+                        
+                        keyframes = data.keyframes;
+                        currentIndex = keyframes.length > 0 ? keyframes.length - 1 : -1;
+                        
+                        if (currentIndex !== -1) {
+                            applyState(currentIndex);
+                            showMessage('파일을 불러왔습니다.');
+                        } else {
+                            showMessage('유효한 데이터가 없습니다.');
+                            btnReset.click();
+                        }
+
+                    } else {
+                        showMessage('올바른 파일 형식이 아닙니다.');
+                    }
+                } catch (error) {
+                    showMessage('파일을 불러오는 중 오류: ' + error.message);
+                }
+                fileInput.value = '';
+            };
+            reader.readAsText(file);
+        });
+
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('load', () => {
+            handleResize();
+            pushState();
+            render();
+        });
+    </script>
+</body>
+</html>
