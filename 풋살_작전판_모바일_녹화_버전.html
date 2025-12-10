@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
+  <title>풋살 작전판 - 애니메이션</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background: #1f2937;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+      overflow-x: hidden;
+    }
+    .container {
+      text-align: center;
+      max-width: 100%;
+      width: 100%;
+    }
+    h1 {
+      color: white;
+      margin-bottom: 8px;
+      font-size: clamp(18px, 5vw, 28px);
+    }
+    .subtitle {
+      color: #9ca3af;
+      margin-bottom: 15px;
+      font-size: clamp(11px, 3vw, 14px);
+      padding: 0 10px;
+    }
+    .button-group {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+      padding: 0 5px;
+    }
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 999px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: clamp(11px, 3vw, 14px);
+      touch-action: manipulation;
+      white-space: nowrap;
+      color: #f9fafb;
+    }
+    button:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-move {
+      background: #3b82f6;
+    }
+    .btn-move.active {
+      background: #2563eb;
+    }
+    .btn-arrow {
+      background: #10b981;
+    }
+    .btn-arrow.active {
+      background: #059669;
+    }
+    .btn-yellow {
+      background: #d97706;
+    }
+    .btn-red {
+      background: #dc2626;
+    }
+    .btn-purple {
+      background: #7c3aed;
+    }
+    .btn-green {
+      background: #16a34a;
+    }
+    .btn-orange {
+      background: #ea580c;
+    }
+    .btn-gray {
+      background: #4b5563;
+    }
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+    canvas {
+      border: 3px solid #374151;
+      border-radius: 8px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      touch-action: none;
+      display: block;
+      width: 100%;
+      height: auto;
+      max-width: 100%;
+      background: #020617;
+    }
+    .info {
+      margin-top: 15px;
+      color: white;
+      padding: 0 10px;
+    }
+    .team-info {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .team-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge-circle {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid white;
+      flex-shrink: 0;
+    }
+    .badge-blue {
+      background: #3b82f6;
+    }
+    .badge-red {
+      background: #ef4444;
+    }
+    .position-info {
+      color: #9ca3af;
+      font-size: clamp(10px, 2.5vw, 12px);
+      margin-bottom: 12px;
+    }
+    .usage-box {
+      background: #374151;
+      padding: 12px;
+      border-radius: 8px;
+      color: #d1d5db;
+      font-size: clamp(10px, 2.5vw, 12px);
+      max-width: 600px;
+      margin: 0 auto;
+      text-align: left;
+    }
+    .usage-box p {
+      margin: 4px 0;
+    }
+    .usage-title {
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .tip {
+      color: #fbbf24;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 5px;
+      }
+      h1 {
+        margin-bottom: 5px;
+      }
+      .subtitle {
+        margin-bottom: 10px;
+      }
+      .button-group {
+        gap: 4px;
+        margin-bottom: 8px;
+      }
+      button {
+        padding: 7px 10px;
+        font-size: 11px;
+      }
+      canvas {
+        border-width: 2px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>풋살 작전판</h1>
+    <p class="subtitle">선수 배치 → 키프레임 자동 저장 → 재생 / 전술파일 저장</p>
+
+    <div class="button-group">
+      <button class="btn-gray" id="btnUndo">↩️ 실행취소</button>
+      <button class="btn-move active" id="btnMove">✋ 이동</button>
+      <button class="btn-arrow" id="btnArrow">➡️ 화살표</button>
+      <button class="btn-yellow" id="btnClearArrows">🗑️ 화살표</button>
+      <button class="btn-red" id="btnReset">🔄 초기화</button>
+    </div>
+
+    <div class="button-group">
+      <button class="btn-purple" id="btnSaveKeyframe">💾 키프레임 (<span id="keyframeCount">0</span>)</button>
+      <button class="btn-green" id="btnPlay">▶️ 재생</button>
+      <button class="btn-gray" id="btnClearKeyframes">🗑️ 키프레임</button>
+      <button class="btn-purple" id="btnExport">📁 전술파일 저장</button>
+    </div>
+
+    <div class="canvas-wrapper">
+      <canvas id="canvas" width="800" height="500"></canvas>
+    </div>
+      <canvas id="canvas" width="800" height="500"></canvas>
+    </div>
+
+    <div class="info">
+      <div class="team-info">
+        <div class="team-badge">
+          <div class="badge-circle badge-blue"></div>
+          <span style="font-weight:bold; font-size:clamp(12px,3vw,14px);">우리팀</span>
+        </div>
+        <div class="team-badge">
+          <div class="badge-circle badge-red"></div>
+          <span style="font-weight:bold; font-size:clamp(12px,3vw,14px);">상대팀</span>
+        </div>
+      </div>
+      <div class="position-info">
+        골레이로(GK) · 픽소(DF) · 아라×2(Wing) · 피보(FW) · 공 1개(센터서클 중앙)
+      </div>
+      <div class="usage-box">
+        <p class="usage-title">📋 사용법:</p>
+        <p>1. 선수/공을 드래그(또는 터치 이동)</p>
+        <p>2. 이동/화살표 추가할 때마다 키프레임 자동 저장</p>
+        <p>3. "💾 키프레임"으로 필요한 장면만 따로 추가 저장 가능</p>
+        <p>4. "▶️ 재생"으로 움직임 확인</p>
+        <p>5. "📁 전술파일 저장"으로 JSON 전술파일 저장 (파일 이름 직접 입력)</p>
+        <p class="tip">💡 모바일에서도 터치로 동일하게 사용 가능</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  // 반응형 스케일
+  let scale = 1;
+  function resizeCanvas() {
+    const wrapper = canvas.parentElement;
+    const maxWidth = Math.min(wrapper.clientWidth, 800);
+    scale = maxWidth / 800;
+    canvas.style.width = maxWidth + 'px';
+    canvas.style.height = (maxWidth * 500 / 800) + 'px';
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // 상태
+  let players = [
+    { id: 1, x: 100, y: 250, team: 'blue', label: '골레이로' },
+    { id: 2, x: 200, y: 150, team: 'blue', label: '아라' },
+    { id: 3, x: 200, y: 350, team: 'blue', label: '아라' },
+    { id: 4, x: 200, y: 250, team: 'blue', label: '픽소' },
+    { id: 5, x: 300, y: 250, team: 'blue', label: '피보' },
+    { id: 6, x: 700, y: 250, team: 'red', label: '골레이로' },
+    { id: 7, x: 600, y: 150, team: 'red', label: '아라' },
+    { id: 8, x: 600, y: 350, team: 'red', label: '아라' },
+    { id: 9, x: 600, y: 250, team: 'red', label: '픽소' },
+    { id: 10, x: 500, y: 250, team: 'red', label: '피보' }
+  ];
+  let ball = { x: 400, y: 250 };
+  let arrows = [];
+  let keyframes = [];
+  let mode = 'move';
+  let dragging = null;
+  let drawingArrow = null;
+  let isPlaying = false;
+  let playbackProgress = 0;
+  let animationId = null;
+  let pendingMoveKeyframe = false; // 이동 후 자동 키프레임 여부
+
+  const keyframeCountSpan = document.getElementById('keyframeCount');
+
+  // 실행취소(UNDO) 스택
+  const historyStack = [];
+  const HISTORY_LIMIT = 50;
+
+  function cloneState() {
+    return {
+      players: JSON.parse(JSON.stringify(players)),
+      ball: { ...ball },
+      arrows: JSON.parse(JSON.stringify(arrows)),
+      keyframes: JSON.parse(JSON.stringify(keyframes))
+    };
+  }
+
+  function saveState() {
+    historyStack.push(cloneState());
+    if (historyStack.length > HISTORY_LIMIT) historyStack.shift();
+  }
+
+  function undo() {
+    if (isPlaying) return;
+    if (historyStack.length === 0) return;
+    const prev = historyStack.pop();
+    if (!prev || !Array.isArray(prev.players)) return;
+    players = prev.players;
+    ball = prev.ball || ball;
+    arrows = prev.arrows || [];
+    keyframes = prev.keyframes || [];
+    keyframeCountSpan.textContent = keyframes.length.toString();
+    render();
+  }
+
+  // 현재 상태를 키프레임으로 추가
+  function addKeyframeFromCurrent() {
+    const frame = {
+      players: JSON.parse(JSON.stringify(players)),
+      ball: { ...ball }
+    };
+    keyframes.push(frame);
+    keyframeCountSpan.textContent = keyframes.length.toString();
+  }
+
+  // 좌표 변환
+  function getCanvasCoords(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const x = (clientX - rect.left) / scale;
+    const y = (clientY - rect.top) / scale;
+    return { x, y };
+  }
+
+  // 필드 그리기
+  function drawField() {
+    ctx.fillStyle = '#2d8a3e';
+    ctx.fillRect(0, 0, 800, 500);
+
+    ctx.strokeStyle = '#f9fafb';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(50, 50, 700, 400);
+
+    ctx.beginPath();
+    ctx.moveTo(400, 50);
+    ctx.lineTo(400, 450);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(400, 250, 60, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeRect(50, 150, 80, 200);
+    ctx.strokeRect(670, 150, 80, 200);
+
+    ctx.strokeRect(50, 200, 30, 100);
+    ctx.strokeRect(720, 200, 30, 100);
+
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = '#ffeb3b';
+    ctx.beginPath();
+    ctx.moveTo(50, 210);
+    ctx.lineTo(50, 290);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(750, 210);
+    ctx.lineTo(750, 290);
+    ctx.stroke();
+  }
+
+  function drawPlayer(player) {
+    const color = player.team === 'blue' ? '#1e40af' : '#b91c1c';
+
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath();
+    ctx.arc(player.x + 2, player.y + 2, 26, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, 26, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#f9fafb';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#f9fafb';
+    ctx.font = 'bold 11px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(player.label, player.x, player.y);
+  }
+
+  function drawBall() {
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath();
+    ctx.arc(ball.x + 2, ball.y + 2, 15, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#fefce8';
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, 15, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#111827';
+    [[-4, -4], [4, -4], [0, 5]].forEach(([dx, dy]) => {
+      ctx.beginPath();
+      ctx.arc(ball.x + dx, ball.y + dy, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  function drawArrow(arrow, isTemp = false) {
+    const { x1, y1, x2, y2, color } = arrow;
+    ctx.strokeStyle = isTemp ? 'rgba(255,255,255,0.7)' : color;
+    ctx.lineWidth = 3;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    const headlen = 14;
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(
+      x2 - headlen * Math.cos(angle - Math.PI / 6),
+      y2 - headlen * Math.sin(angle - Math.PI / 6)
+    );
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(
+      x2 - headlen * Math.cos(angle + Math.PI / 6),
+      y2 - headlen * Math.sin(angle + Math.PI / 6)
+    );
+    ctx.stroke();
+  }
+
+  function render() {
+    drawField();
+    arrows.forEach(a => drawArrow(a));
+    if (drawingArrow && drawingArrow.x2 !== null) drawArrow(drawingArrow, true);
+    players.forEach(p => drawPlayer(p));
+    drawBall();
+
+    if (keyframes.length > 0 && !isPlaying) {
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(12, 448, 260, 40);
+      ctx.fillStyle = '#f9fafb';
+      ctx.font = 'bold 16px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText(`💾 키프레임: ${keyframes.length}개`, 20, 474);
+    }
+
+    if (isPlaying) {
+      ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      ctx.fillRect(250, 16, 300, 48);
+      ctx.fillStyle = '#f9fafb';
+      ctx.font = 'bold 20px Arial';
+      ctx.textAlign = 'center';
+      const text = '▶ 재생 중...';
+      ctx.fillText(text, 400, 40);
+
+      ctx.fillStyle = 'rgba(249,250,251,0.3)';
+      ctx.fillRect(260, 48, 280, 10);
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(260, 48, 280 * playbackProgress, 10);
+      ctx.textAlign = 'left';
+    }
+  }
+
+  function getPlayerAt(x, y) {
+    return players.find(p => {
+      const dx = p.x - x;
+      const dy = p.y - y;
+      return Math.sqrt(dx * dx + dy * dy) < 26;
+    });
+  }
+
+  function isBallAt(x, y) {
+    const dx = ball.x - x;
+    const dy = ball.y - y;
+    return Math.sqrt(dx * dx + dy * dy) < 18;
+  }
+
+  // 입력 처리
+  document.getElementById('btnUndo').addEventListener('click', undo);
+
+  function handleStart(clientX, clientY) {
+    if (isPlaying) return;
+    const { x, y } = getCanvasCoords(clientX, clientY);
+    const player = getPlayerAt(x, y);
+    const ballHit = isBallAt(x, y);
+
+    pendingMoveKeyframe = false;
+
+    if (mode === 'move' && (player || ballHit)) {
+      saveState();
+    }
+
+    if (mode === 'move' && ballHit) {
+      dragging = { type: 'ball', offsetX: x - ball.x, offsetY: y - ball.y };
+      pendingMoveKeyframe = true;
+    } else if (mode === 'move' && player) {
+      dragging = {
+        type: 'player',
+        id: player.id,
+        offsetX: x - player.x,
+        offsetY: y - player.y
+      };
+      pendingMoveKeyframe = true;
+    } else if (mode === 'arrow' && player) {
+      saveState();
+      drawingArrow = {
+        x1: player.x,
+        y1: player.y,
+        x2: x,
+        y2: y,
+        color: player.team === 'blue' ? '#60a5fa' : '#f97373'
+      };
+    }
+  }
+
+  function handleMove(clientX, clientY) {
+    if (isPlaying) return;
+    const { x, y } = getCanvasCoords(clientX, clientY);
+
+    if (dragging && mode === 'move') {
+      if (dragging.type === 'ball') {
+        ball.x = x - dragging.offsetX;
+        ball.y = y - dragging.offsetY;
+      } else if (dragging.type === 'player') {
+        const p = players.find(pl => pl.id === dragging.id);
+        if (p) {
+          p.x = x - dragging.offsetX;
+          p.y = y - dragging.offsetY;
+        }
+      }
+      render();
+    } else if (drawingArrow && mode === 'arrow') {
+      drawingArrow.x2 = x;
+      drawingArrow.y2 = y;
+      render();
+    }
+  }
+
+  function handleEnd() {
+    if (drawingArrow && mode === 'arrow') {
+      const dx = drawingArrow.x2 - drawingArrow.x1;
+      const dy = drawingArrow.y2 - drawingArrow.y1;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > 20) {
+        arrows.push(drawingArrow);
+        // 화살표 추가할 때 자동 키프레임
+        addKeyframeFromCurrent();
+      }
+      drawingArrow = null;
+      render();
+    }
+
+    // 이동 종료 시 자동 키프레임
+    if (pendingMoveKeyframe) {
+      addKeyframeFromCurrent();
+      pendingMoveKeyframe = false;
+    }
+
+    dragging = null;
+  }
+
+  canvas.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
+  canvas.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+  canvas.addEventListener('mouseup', handleEnd);
+  canvas.addEventListener('mouseleave', () => (dragging = null));
+
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const t = e.touches[0];
+    handleStart(t.clientX, t.clientY);
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const t = e.touches[0];
+    handleMove(t.clientX, t.clientY);
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    handleEnd();
+  }, { passive: false });
+
+  // 버튼
+  const btnMove = document.getElementById('btnMove');
+  const btnArrow = document.getElementById('btnArrow');
+
+  btnMove.addEventListener('click', () => {
+    if (isPlaying) return;
+    mode = 'move';
+    btnMove.classList.add('active');
+    btnArrow.classList.remove('active');
+  });
+
+  btnArrow.addEventListener('click', () => {
+    if (isPlaying) return;
+    mode = 'arrow';
+    btnArrow.classList.add('active');
+    btnMove.classList.remove('active');
+  });
+
+  document.getElementById('btnClearArrows').addEventListener('click', () => {
+    if (isPlaying) return;
+    if (arrows.length === 0) return;
+    saveState();
+    arrows = [];
+    render();
+  });
+
+  document.getElementById('btnReset').addEventListener('click', () => {
+    if (isPlaying) return;
+    saveState();
+    players = [
+      { id: 1, x: 100, y: 250, team: 'blue', label: '골레이로' },
+      { id: 2, x: 200, y: 150, team: 'blue', label: '아라' },
+      { id: 3, x: 200, y: 350, team: 'blue', label: '아라' },
+      { id: 4, x: 200, y: 250, team: 'blue', label: '픽소' },
+      { id: 5, x: 300, y: 250, team: 'blue', label: '피보' },
+      { id: 6, x: 700, y: 250, team: 'red', label: '골레이로' },
+      { id: 7, x: 600, y: 150, team: 'red', label: '아라' },
+      { id: 8, x: 600, y: 350, team: 'red', label: '아라' },
+      { id: 9, x: 600, y: 250, team: 'red', label: '픽소' },
+      { id: 10, x: 500, y: 250, team: 'red', label: '피보' }
+    ];
+    ball = { x: 400, y: 250 };
+    arrows = [];
+    keyframes = [];
+    keyframeCountSpan.textContent = '0';
+    render();
+  });
+
+  document.getElementById('btnSaveKeyframe').addEventListener('click', () => {
+    if (isPlaying) return;
+    saveState();
+    addKeyframeFromCurrent();
+    render();
+  });
+
+  document.getElementById('btnClearKeyframes').addEventListener('click', () => {
+    if (isPlaying) return;
+    if (keyframes.length === 0) return;
+    saveState();
+    keyframes = [];
+    keyframeCountSpan.textContent = '0';
+    render();
+  });
+
+  document.getElementById('btnExport').addEventListener('click', () => {
+    if (keyframes.length === 0) {
+      alert('저장할 키프레임이 없습니다. 최소 1개 이상 저장하세요.');
+      return;
+    }
+    const name = prompt('저장할 파일 이름(확장자 제외):', 'futsal_tactics') || 'futsal_tactics';
+    const data = {
+      meta: {
+        type: 'futsal_tactics',
+        version: 1,
+        createdAt: new Date().toISOString()
+      },
+      initialPlayers: players,
+      ball,
+      arrows,
+      keyframes
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // 애니메이션
+  function interpolate(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function playAnimation() {
+    if (keyframes.length < 2) {
+      alert('최소 2개의 키프레임이 필요합니다!');
+      return;
+    }
+    if (isPlaying) return;
+
+    for (let i = 0; i < keyframes.length; i++) {
+      const k = keyframes[i];
+      if (!k || !Array.isArray(k.players) || typeof k.ball !== 'object') {
+        alert('손상된 키프레임이 있어 재생할 수 없습니다. 키프레임을 다시 저장하세요.');
+        return;
+      }
+    }
+
+    isPlaying = true;
+    document.getElementById('btnPlay').disabled = true;
+
+    const segmentDuration = 2000;
+    const totalSegments = keyframes.length - 1;
+    const totalDuration = totalSegments * segmentDuration;
+    const startTime = performance.now();
+
+    function step(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / totalDuration, 1);
+      playbackProgress = progress;
+
+      if (progress >= 1) {
+        isPlaying = false;
+        playbackProgress = 0;
+        document.getElementById('btnPlay').disabled = false;
+        render();
+        return;
+      }
+
+      const segmentFloat = progress * totalSegments;
+      let idx = Math.floor(segmentFloat);
+      if (idx >= totalSegments) idx = totalSegments - 1;
+      const t = segmentFloat - idx;
+
+      const f1 = keyframes[idx];
+      const f2 = keyframes[idx + 1];
+      if (!f1 || !f2 || !Array.isArray(f1.players) || !Array.isArray(f2.players)) {
+        isPlaying = false;
+        document.getElementById('btnPlay').disabled = false;
+        return;
+      }
+
+      players = f1.players.map((p, i) => {
+        const next = f2.players[i] || f2.players[f2.players.length - 1] || p;
+        return {
+          ...p,
+          x: interpolate(p.x, next.x, t),
+          y: interpolate(p.y, next.y, t)
+        };
+      });
+      ball = {
+        x: interpolate(f1.ball.x, f2.ball.x, t),
+        y: interpolate(f1.ball.y, f2.ball.y, t)
+      };
+
+      render();
+      animationId = requestAnimationFrame(step);
+    }
+
+    animationId = requestAnimationFrame(step);
+  }
+
+  document.getElementById('btnPlay').addEventListener('click', playAnimation);
+
+  // 초기 렌더링
+  render();
+</script>
+</body>
+</html>
